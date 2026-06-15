@@ -1,14 +1,24 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import BottomNav from './BottomNav';
 import { useAuth } from '../context/AuthContext';
 import { OverlaySettings } from '../types';
 import { getSettings, saveSettings } from '../utils/settings';
+import { saveAppKV, getAppKV, deleteAppKV } from '../utils/db';
 
 export default function Settings() {
   const { profile, signOut } = useAuth();
   const [settings, setSettings] = useState<OverlaySettings>(getSettings());
   const [avatarError, setAvatarError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load logo from IndexedDB on mount
+  useEffect(() => {
+    getAppKV('logo').then((data) => {
+      if (data) {
+        setSettings((s) => ({ ...s, logoDataUrl: data, showLogo: true }));
+      }
+    }).catch(() => {});
+  }, []);
 
   const update = (key: keyof OverlaySettings, value: unknown) => {
     const next = { ...settings, [key]: value };
@@ -22,6 +32,8 @@ export default function Settings() {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const dataUrl = ev.target?.result as string;
+      // Save binary data to IndexedDB (no localStorage quota issue)
+      saveAppKV('logo', dataUrl).catch(console.error);
       const next = { ...settings, logoDataUrl: dataUrl, showLogo: true };
       setSettings(next);
       saveSettings(next);
@@ -30,8 +42,10 @@ export default function Settings() {
   };
 
   const removeLogo = () => {
-    update('logoDataUrl', '');
-    update('showLogo', false);
+    deleteAppKV('logo').catch(console.error);
+    const next = { ...settings, logoDataUrl: '', showLogo: false };
+    setSettings(next);
+    saveSettings(next);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 

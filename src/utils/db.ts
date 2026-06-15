@@ -1,8 +1,9 @@
 import { CapturedPhoto } from '../types';
 
 const DB_NAME = 'geofoto-db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = 'photos';
+const KV_STORE = 'app-kv';
 
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -21,7 +22,43 @@ function openDB(): Promise<IDBDatabase> {
         store.createIndex('projectId', 'projectId', { unique: false });
         store.createIndex('capturedAt', 'capturedAt', { unique: false });
       }
+      if (!db.objectStoreNames.contains(KV_STORE)) {
+        db.createObjectStore(KV_STORE);
+      }
     };
+  });
+}
+
+export async function saveAppKV(key: string, value: string): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(KV_STORE, 'readwrite');
+    const store = tx.objectStore(KV_STORE);
+    const req = store.put(value, key);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+export async function getAppKV(key: string): Promise<string | null> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(KV_STORE, 'readonly');
+    const store = tx.objectStore(KV_STORE);
+    const req = store.get(key);
+    req.onsuccess = () => resolve((req.result as string) ?? null);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+export async function deleteAppKV(key: string): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(KV_STORE, 'readwrite');
+    const store = tx.objectStore(KV_STORE);
+    const req = store.delete(key);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
   });
 }
 

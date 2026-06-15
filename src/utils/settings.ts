@@ -29,7 +29,14 @@ export function getSettings(): OverlaySettings {
 }
 
 export function saveSettings(settings: OverlaySettings): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  // logoDataUrl is stored in IndexedDB — never in localStorage (quota issues)
+  const { logoDataUrl: _omit, ...rest } = settings;
+  void _omit;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(rest));
+  } catch {
+    console.warn('saveSettings: localStorage quota exceeded');
+  }
 }
 
 export function updateSettings(partial: Partial<OverlaySettings>): OverlaySettings {

@@ -6,7 +6,7 @@ import { db } from '../firebase';
 import { GeoState, OverlaySettings } from '../types';
 import { startGeoWatch } from '../utils/geo';
 import { renderPhotoWithOverlayAsync } from '../utils/canvas';
-import { savePhoto, getPhotos } from '../utils/db';
+import { savePhoto, getPhotos, getAppKV } from '../utils/db';
 import { getSettings, saveSettings } from '../utils/settings';
 import { getProjects } from '../utils/projects';
 
@@ -342,11 +342,18 @@ export default function NewPhoto() {
     setTimeout(() => setFlash(false), 200);
 
     try {
+      // Load logo from IndexedDB so it's always available even after navigation
+      let logoDataUrl = settings.logoDataUrl || '';
+      if (settings.showLogo && !logoDataUrl) {
+        logoDataUrl = (await getAppKV('logo')) || '';
+      }
+      const settingsWithLogo = { ...settings, logoDataUrl };
+
       const dataUrl = await renderPhotoWithOverlayAsync(
         videoRef.current,
         geo,
         projectName,
-        settings
+        settingsWithLogo
       );
 
       const id = await savePhoto({
