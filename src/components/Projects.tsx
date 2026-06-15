@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import JSZip from 'jszip';
 import BottomNav from './BottomNav';
 import { Project } from '../types';
 import { getProjects, saveProject, deleteProject } from '../utils/projects';
@@ -13,11 +14,11 @@ export default function Projects() {
   const [newName, setNewName] = useState('');
   const [creating, setCreating] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState<string | null>(null);
 
   const loadData = async () => {
     const projs = getProjects();
     setProjects(projs);
-
     const photos = await getPhotos();
     const counts: Record<string, number> = {};
     photos.forEach((p) => {
@@ -51,13 +52,38 @@ export default function Projects() {
     }
   };
 
-  const formatDate = (ts: number) => {
-    return new Date(ts).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    });
+  const handleDownloadZip = async (project: Project) => {
+    setDownloading(project.id);
+    try {
+      const allPhotos = await getPhotos();
+      const projectPhotos = allPhotos.filter((p) => p.projectId === project.id);
+      if (projectPhotos.length === 0) return;
+
+      const zip = new JSZip();
+      const folder = zip.folder(project.name) ?? zip;
+
+      projectPhotos.forEach((photo, idx) => {
+        const base64 = photo.dataUrl.split(',')[1];
+        const date = new Date(photo.capturedAt).toISOString().slice(0, 10);
+        folder.file(`foto_${String(idx + 1).padStart(3, '0')}_${date}.jpg`, base64, { base64: true });
+      });
+
+      const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${project.name.replace(/\s+/g, '_')}_fotos.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error creating ZIP:', err);
+    } finally {
+      setDownloading(null);
+    }
   };
+
+  const formatDate = (ts: number) =>
+    new Date(ts).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
 
   return (
     <div className="page">
@@ -73,18 +99,19 @@ export default function Projects() {
             border: '1px solid rgba(0,255,102,0.25)',
             borderRadius: 'var(--radius-sm)',
             color: 'var(--green)',
-            fontSize: '0.85rem',
-            fontWeight: 600,
+            fontSize: '0.8rem',
+            fontWeight: 700,
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
+            letterSpacing: '0.04em',
           }}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          Novo
+          NOVO PROJETO
         </button>
       </div>
 
@@ -109,6 +136,7 @@ export default function Projects() {
             {projects.map((project) => {
               const count = photoCounts[project.id] || 0;
               const isConfirming = deleteConfirm === project.id;
+              const isDownloading = downloading === project.id;
               return (
                 <div
                   key={project.id}
@@ -174,6 +202,38 @@ export default function Projects() {
                     {count}
                   </div>
 
+                  {/* Download ZIP */}
+                  {count > 0 && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDownloadZip(project); }}
+                      disabled={isDownloading}
+                      title="Baixar fotos em ZIP"
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: 'var(--radius-xs)',
+                        background: 'rgba(0,229,255,0.08)',
+                        border: '1px solid rgba(0,229,255,0.2)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        color: 'var(--cyan)',
+                        opacity: isDownloading ? 0.5 : 1,
+                      }}
+                    >
+                      {isDownloading ? (
+                        <div className="spinner" style={{ width: '14px', height: '14px' }} />
+                      ) : (
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                          <polyline points="7 10 12 15 17 10" />
+                          <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                      )}
+                    </button>
+                  )}
+
                   {/* Delete */}
                   <button
                     onClick={(e) => { e.stopPropagation(); handleDelete(project.id); }}
@@ -191,19 +251,13 @@ export default function Projects() {
                     }}
                   >
                     <svg
-                      width="15"
-                      height="15"
-                      viewBox="0 0 24 24"
-                      fill="none"
+                      width="15" height="15" viewBox="0 0 24 24" fill="none"
                       stroke={isConfirming ? 'var(--red)' : 'var(--text-muted)'}
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
+                      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
                     >
                       <polyline points="3 6 5 6 21 6" />
                       <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                      <path d="M10 11v6" />
-                      <path d="M14 11v6" />
+                      <path d="M10 11v6" /><path d="M14 11v6" />
                       <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
                     </svg>
                   </button>
@@ -227,16 +281,6 @@ export default function Projects() {
           </div>
         )}
       </div>
-
-      {/* FAB */}
-      {projects.length > 0 && (
-        <button className="fab" onClick={() => setShowModal(true)}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-        </button>
-      )}
 
       {/* Modal */}
       {showModal && (
