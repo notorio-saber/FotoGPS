@@ -4,6 +4,7 @@ import BottomNav from './BottomNav';
 import { CapturedPhoto } from '../types';
 import { getPhotos, deletePhoto } from '../utils/db';
 import { getProjects } from '../utils/projects';
+import { generateKML, downloadKML } from '../utils/kml';
 
 interface PhotoModalProps {
   photo: CapturedPhoto;
@@ -20,6 +21,12 @@ function PhotoModal({ photo, onClose, onDelete }: PhotoModalProps) {
     const date = new Date(photo.capturedAt).toISOString().slice(0, 10);
     a.download = `geofoto_${date}_${photo.id}.jpg`;
     a.click();
+  };
+
+  const handleDownloadKML = () => {
+    const kml = generateKML([photo], photo.projectName || 'Sem projeto');
+    const date = new Date(photo.capturedAt).toISOString().slice(0, 10);
+    downloadKML(kml, `ponto_${date}_${photo.id}.kml`);
   };
 
   const handleDelete = () => {
@@ -63,6 +70,19 @@ function PhotoModal({ photo, onClose, onDelete }: PhotoModalProps) {
           {new Date(photo.capturedAt).toLocaleString('pt-BR')}
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
+          {photo.lat !== null && (
+            <button
+              className="btn-ghost"
+              onClick={handleDownloadKML}
+              title="Baixar ponto GPS em KML"
+              style={{ color: 'var(--green)', padding: '8px' }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+            </button>
+          )}
           <button
             className="btn-ghost"
             onClick={handleDownload}
@@ -112,6 +132,20 @@ function PhotoModal({ photo, onClose, onDelete }: PhotoModalProps) {
         {photo.lat !== null && (
           <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', fontFamily: 'monospace', marginTop: '4px' }}>
             {photo.lat?.toFixed(6)}, {photo.lon?.toFixed(6)}
+          </div>
+        )}
+        {photo.observation && (
+          <div style={{
+            fontSize: '0.78rem',
+            color: 'var(--text-muted)',
+            marginTop: '8px',
+            padding: '6px 10px',
+            background: 'rgba(255,255,255,0.04)',
+            borderRadius: 'var(--radius-xs)',
+            borderLeft: '2px solid rgba(0,255,102,0.3)',
+            fontFamily: 'Courier New, monospace',
+          }}>
+            Obs: {photo.observation}
           </div>
         )}
         {confirmDelete && (

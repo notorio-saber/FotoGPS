@@ -33,6 +33,7 @@ export function renderPhotoWithOverlay(
   geo: GeoState,
   projectName: string,
   settings: OverlaySettings,
+  observation?: string,
   preloadedLogo?: HTMLImageElement | null
 ): string {
   const canvas = document.createElement('canvas');
@@ -95,6 +96,10 @@ export function renderPhotoWithOverlay(
     if (location) {
       lines.push({ text: location });
     }
+  }
+
+  if (observation && observation.trim()) {
+    lines.push({ text: `Obs: ${observation.trim()}` });
   }
 
   if (lines.length === 0) {
@@ -182,7 +187,8 @@ export async function renderPhotoWithOverlayAsync(
   video: HTMLVideoElement,
   geo: GeoState,
   projectName: string,
-  settings: OverlaySettings
+  settings: OverlaySettings,
+  observation?: string
 ): Promise<string> {
   let preloadedLogo: HTMLImageElement | null = null;
   if (settings.showLogo && settings.logoDataUrl) {
@@ -193,5 +199,5 @@ export async function renderPhotoWithOverlayAsync(
       img.src = settings.logoDataUrl;
     });
   }
-  return renderPhotoWithOverlay(video, geo, projectName, settings, preloadedLogo);
+  return renderPhotoWithOverlay(video, geo, projectName, settings, observation, preloadedLogo);
 }

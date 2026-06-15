@@ -5,6 +5,7 @@ import BottomNav from './BottomNav';
 import { Project } from '../types';
 import { getProjects, saveProject, deleteProject } from '../utils/projects';
 import { getPhotos } from '../utils/db';
+import { generateKML, downloadKML } from '../utils/kml';
 
 export default function Projects() {
   const navigate = useNavigate();
@@ -15,6 +16,7 @@ export default function Projects() {
   const [creating, setCreating] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [downloadingKML, setDownloadingKML] = useState<string | null>(null);
 
   const loadData = async () => {
     const projs = getProjects();
@@ -82,6 +84,21 @@ export default function Projects() {
     }
   };
 
+  const handleDownloadKML = async (project: Project) => {
+    setDownloadingKML(project.id);
+    try {
+      const allPhotos = await getPhotos();
+      const projectPhotos = allPhotos.filter((p) => p.projectId === project.id);
+      if (projectPhotos.length === 0) return;
+      const kml = generateKML(projectPhotos, project.name);
+      downloadKML(kml, `${project.name.replace(/\s+/g, '_')}_pontos.kml`);
+    } catch (err) {
+      console.error('Error creating KML:', err);
+    } finally {
+      setDownloadingKML(null);
+    }
+  };
+
   const formatDate = (ts: number) =>
     new Date(ts).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
 
@@ -137,6 +154,7 @@ export default function Projects() {
               const count = photoCounts[project.id] || 0;
               const isConfirming = deleteConfirm === project.id;
               const isDownloading = downloading === project.id;
+              const isDownloadingKml = downloadingKML === project.id;
               return (
                 <div
                   key={project.id}
@@ -201,6 +219,37 @@ export default function Projects() {
                   }}>
                     {count}
                   </div>
+
+                  {/* Download KML */}
+                  {count > 0 && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDownloadKML(project); }}
+                      disabled={isDownloadingKml}
+                      title="Baixar pontos GPS em KML"
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: 'var(--radius-xs)',
+                        background: 'rgba(0,255,102,0.06)',
+                        border: '1px solid rgba(0,255,102,0.2)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        color: 'var(--green)',
+                        opacity: isDownloadingKml ? 0.5 : 1,
+                      }}
+                    >
+                      {isDownloadingKml ? (
+                        <div className="spinner" style={{ width: '14px', height: '14px' }} />
+                      ) : (
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                          <circle cx="12" cy="10" r="3" />
+                        </svg>
+                      )}
+                    </button>
+                  )}
 
                   {/* Download ZIP */}
                   {count > 0 && (

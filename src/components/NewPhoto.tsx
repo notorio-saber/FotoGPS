@@ -44,10 +44,11 @@ function GpsIndicator({ geo }: { geo: GeoState }) {
   );
 }
 
-function LiveOverlay({ geo, projectName, settings }: {
+function LiveOverlay({ geo, projectName, settings, observation }: {
   geo: GeoState;
   projectName: string;
   settings: OverlaySettings;
+  observation?: string;
 }) {
   const lines: Array<{ text: string; isTitle?: boolean }> = [];
 
@@ -85,6 +86,10 @@ function LiveOverlay({ geo, projectName, settings }: {
   if (settings.showCity && (geo.city || geo.state)) {
     const loc = [geo.city, geo.state].filter(Boolean).join(' — ');
     if (loc) lines.push({ text: loc });
+  }
+
+  if (observation && observation.trim()) {
+    lines.push({ text: `Obs: ${observation.trim()}` });
   }
 
   if (lines.length === 0) return null;
@@ -242,6 +247,8 @@ export default function NewPhoto() {
   const [cameraError, setCameraError] = useState('');
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
   const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
+  const [observation, setObservation] = useState('');
+  const [showNoteInput, setShowNoteInput] = useState(false);
 
   // Time ticker for live overlay
   const [, setTick] = useState(0);
@@ -353,7 +360,8 @@ export default function NewPhoto() {
         videoRef.current,
         geo,
         projectName,
-        settingsWithLogo
+        settingsWithLogo,
+        observation
       );
 
       const id = await savePhoto({
@@ -363,8 +371,10 @@ export default function NewPhoto() {
         capturedAt: Date.now(),
         lat: geo.lat,
         lon: geo.lon,
+        altitude: geo.altitude,
         city: geo.city,
         state: geo.state,
+        observation: observation.trim() || undefined,
       });
 
       setLastPhotoUrl(dataUrl);
@@ -455,7 +465,7 @@ export default function NewPhoto() {
       {/* Live overlay preview */}
       {!cameraError && (
         <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 5 }}>
-          <LiveOverlay geo={geo} projectName={selectedProject?.name || ''} settings={settings} />
+          <LiveOverlay geo={geo} projectName={selectedProject?.name || ''} settings={settings} observation={observation} />
         </div>
       )}
 
@@ -529,11 +539,30 @@ export default function NewPhoto() {
           </svg>
         </button>
 
-        {/* GPS + Settings */}
+        {/* GPS + Note + Settings */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
           <GpsIndicator geo={geo} />
           <button
-            onClick={() => { setShowSettings(!showSettings); setShowProjectPicker(false); }}
+            onClick={() => { setShowNoteInput(!showNoteInput); setShowSettings(false); setShowProjectPicker(false); }}
+            title="Adicionar observação"
+            style={{
+              width: '38px',
+              height: '38px',
+              borderRadius: '50%',
+              background: observation ? 'rgba(0,255,102,0.2)' : showNoteInput ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.4)',
+              border: `1px solid ${observation ? 'rgba(0,255,102,0.4)' : 'rgba(255,255,255,0.1)'}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={observation ? 'var(--green)' : 'white'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+            </svg>
+          </button>
+          <button
+            onClick={() => { setShowSettings(!showSettings); setShowProjectPicker(false); setShowNoteInput(false); }}
             style={{
               width: '38px',
               height: '38px',
@@ -617,6 +646,61 @@ export default function NewPhoto() {
             onUpdate={setSettings}
             onClose={() => setShowSettings(false)}
           />
+        </div>
+      )}
+
+      {/* Note input panel */}
+      {showNoteInput && (
+        <div style={{
+          position: 'absolute',
+          bottom: 'calc(120px + env(safe-area-inset-bottom, 0px))',
+          left: 0,
+          right: 0,
+          zIndex: 30,
+          background: 'rgba(10,10,10,0.93)',
+          borderTop: '1px solid rgba(0,255,102,0.2)',
+          padding: '10px 14px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+        }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+          </svg>
+          <input
+            type="text"
+            value={observation}
+            onChange={(e) => setObservation(e.target.value)}
+            placeholder="Observação (aparecerá na foto)..."
+            autoFocus
+            style={{
+              flex: 1,
+              background: 'transparent',
+              border: 'none',
+              outline: 'none',
+              color: 'white',
+              fontSize: '0.85rem',
+              fontFamily: 'Courier New, monospace',
+            }}
+          />
+          {observation && (
+            <button
+              onClick={() => setObservation('')}
+              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', padding: '4px', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+              title="Limpar observação"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          )}
+          <button
+            onClick={() => setShowNoteInput(false)}
+            style={{ background: 'none', border: 'none', color: 'var(--green)', padding: '4px 2px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+          >
+            OK
+          </button>
         </div>
       )}
 
@@ -731,7 +815,7 @@ export default function NewPhoto() {
       {(showProjectPicker || showSettings) && (
         <div
           style={{ position: 'absolute', inset: 0, zIndex: 40 }}
-          onClick={() => { setShowProjectPicker(false); setShowSettings(false); }}
+          onClick={() => { setShowProjectPicker(false); setShowSettings(false); setShowNoteInput(false); }}
         />
       )}
     </div>

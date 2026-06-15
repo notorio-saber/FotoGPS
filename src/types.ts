@@ -49,6 +49,8 @@ export interface CapturedPhoto {
   capturedAt: number;
   lat: number | null;
   lon: number | null;
+  altitude?: number | null;
   city: string;
   state: string;
+  observation?: string;
 }
