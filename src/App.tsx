@@ -8,6 +8,7 @@ import Projects from './components/Projects';
 import Gallery from './components/Gallery';
 import Settings from './components/Settings';
 import BlockedScreen from './components/BlockedScreen';
+import InstallPrompt from './components/InstallPrompt';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, profile, loading } = useAuth();
@@ -83,32 +84,37 @@ function RootRedirect() {
 }
 
 function AppRoutes() {
+  const { user } = useAuth();
+
   return (
-    <Routes>
-      <Route path="/" element={<RootRedirect />} />
-      <Route path="/login" element={<Login />} />
-      <Route
-        path="/dashboard"
-        element={<ProtectedRoute><Dashboard /></ProtectedRoute>}
-      />
-      <Route
-        path="/nova-foto"
-        element={<ProtectedRoute><NewPhoto /></ProtectedRoute>}
-      />
-      <Route
-        path="/projetos"
-        element={<ProtectedRoute><Projects /></ProtectedRoute>}
-      />
-      <Route
-        path="/galeria"
-        element={<ProtectedRoute><Gallery /></ProtectedRoute>}
-      />
-      <Route
-        path="/configuracoes"
-        element={<ProtectedRoute><Settings /></ProtectedRoute>}
-      />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <>
+      <Routes>
+        <Route path="/" element={<RootRedirect />} />
+        <Route path="/login" element={<Login />} />
+        <Route
+          path="/dashboard"
+          element={<ProtectedRoute><Dashboard /></ProtectedRoute>}
+        />
+        <Route
+          path="/nova-foto"
+          element={<ProtectedRoute><NewPhoto /></ProtectedRoute>}
+        />
+        <Route
+          path="/projetos"
+          element={<ProtectedRoute><Projects /></ProtectedRoute>}
+        />
+        <Route
+          path="/galeria"
+          element={<ProtectedRoute><Gallery /></ProtectedRoute>}
+        />
+        <Route
+          path="/configuracoes"
+          element={<ProtectedRoute><Settings /></ProtectedRoute>}
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+      {user && <InstallPrompt />}
+    </>
   );
 }
 
