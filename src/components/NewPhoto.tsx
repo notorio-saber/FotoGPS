@@ -148,7 +148,7 @@ function SettingsDrawer({
   return (
     <div style={{
       position: 'absolute',
-      top: 56,
+      top: '56px',
       right: 0,
       width: '260px',
       background: 'rgba(10,10,10,0.97)',
@@ -458,13 +458,16 @@ export default function NewPhoto() {
         top: 0,
         left: 0,
         right: 0,
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+        background: 'linear-gradient(rgba(0,0,0,0.6), transparent)',
+        zIndex: 20,
+      }}>
+      <div style={{
         height: '56px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '0 12px',
-        background: 'linear-gradient(rgba(0,0,0,0.6), transparent)',
-        zIndex: 20,
         gap: '8px',
       }}>
         {/* Back */}
@@ -542,12 +545,13 @@ export default function NewPhoto() {
           </button>
         </div>
       </div>
+      </div>
 
       {/* Project picker dropdown */}
       {showProjectPicker && (
         <div style={{
           position: 'absolute',
-          top: 62,
+          top: 'calc(env(safe-area-inset-top, 0px) + 62px)',
           left: '50%',
           transform: 'translateX(-50%)',
           width: '280px',
@@ -600,7 +604,7 @@ export default function NewPhoto() {
 
       {/* Settings drawer */}
       {showSettings && (
-        <div style={{ position: 'absolute', top: 0, right: 0, zIndex: 50, padding: '0 8px' }}>
+        <div style={{ position: 'absolute', top: 'env(safe-area-inset-top, 0px)', right: 0, zIndex: 50, padding: '0 8px' }}>
           <SettingsDrawer
             settings={settings}
             onUpdate={setSettings}
@@ -615,13 +619,16 @@ export default function NewPhoto() {
         bottom: 0,
         left: 0,
         right: 0,
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        background: 'linear-gradient(transparent, rgba(0,0,0,0.7))',
+        zIndex: 20,
+      }}>
+      <div style={{
         height: '120px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '0 32px 16px',
-        background: 'linear-gradient(transparent, rgba(0,0,0,0.7))',
-        zIndex: 20,
       }}>
         {/* Last photo thumbnail */}
         <button
@@ -701,10 +708,11 @@ export default function NewPhoto() {
           </svg>
         </button>
       </div>
+      </div>
 
       {/* Toast */}
       {toast && (
-        <div className="toast" style={{ bottom: '130px' }}>
+        <div className="toast" style={{ bottom: 'calc(130px + env(safe-area-inset-bottom, 0px))' }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <path d="M20 6L9 17l-5-5" />
           </svg>

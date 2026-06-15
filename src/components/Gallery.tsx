@@ -48,6 +48,7 @@ function PhotoModal({ photo, onClose, onDelete }: PhotoModalProps) {
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '16px',
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)',
         borderBottom: '1px solid var(--border)',
         flexShrink: 0,
       }}>
@@ -98,7 +99,7 @@ function PhotoModal({ photo, onClose, onDelete }: PhotoModalProps) {
       </div>
 
       {/* Bottom info */}
-      <div style={{ padding: '16px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
+      <div style={{ padding: '16px', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
         <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--green)', marginBottom: '4px' }}>
           {photo.projectName || 'Sem projeto'}
         </div>
