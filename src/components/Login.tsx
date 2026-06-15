@@ -5,26 +5,25 @@ const features = [
   {
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="10" r="5" />
-        <circle cx="12" cy="10" r="2" fill="#00e5ff" stroke="none" />
-        <path d="M12 15 L12 22" />
-        <path d="M8 19 L12 22 L16 19" />
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <path d="M3 9h18" />
+        <circle cx="8.5" cy="6" r="1.5" fill="#00e5ff" stroke="none" />
+        <polyline points="21 15 16 10 5 21" />
       </svg>
     ),
-    title: 'GPS de precisão',
-    desc: 'Coordenadas e endereço reverso automático via Nominatim',
+    title: 'Foto com tudo dentro',
+    desc: 'Coordenadas, endereço, data, hora e nome do projeto aparecem direto na imagem — sem precisar editar nada depois',
   },
   {
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00ff66" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="18" height="18" rx="2" />
-        <path d="M3 9h18" />
-        <circle cx="8" cy="6" r="1" fill="#00ff66" stroke="none" />
-        <text x="6" y="16" fontSize="5" fill="#00ff66" stroke="none" fontFamily="monospace">LAT LON</text>
+        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+        <line x1="12" y1="11" x2="12" y2="17" />
+        <line x1="9" y1="14" x2="15" y2="14" />
       </svg>
     ),
-    title: 'Sobreposição técnica',
-    desc: 'Data, hora, coordenadas e local gravados sobre cada foto',
+    title: 'Organize por projetos',
+    desc: 'Separe as fotos por obra, inventário ou área. Acesse, filtre e baixe por projeto quando quiser',
   },
   {
     icon: (
@@ -35,8 +34,8 @@ const features = [
         <line x1="6" y1="18" x2="6.01" y2="18" />
       </svg>
     ),
-    title: '100% offline e local',
-    desc: 'Suas fotos ficam no dispositivo — nunca saem para nenhum servidor',
+    title: 'Suas fotos só suas',
+    desc: 'Tudo fica no próprio celular — nunca enviamos suas imagens para nenhum servidor',
   },
 ];
 
@@ -112,24 +111,12 @@ export default function Login() {
         justifyContent: 'space-between',
         borderBottom: '1px solid rgba(255,255,255,0.04)',
       }}>
-        {/* EcoAds logo mark */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{
-            width: '30px', height: '30px',
-            borderRadius: '8px',
-            background: '#030303',
-            border: '1.5px solid rgba(0,255,102,0.45)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '1.05rem', fontWeight: 800, color: '#00ff66',
-            letterSpacing: '-0.05em',
-            boxShadow: '0 0 12px rgba(0,255,102,0.2)',
-          }}>E</div>
-          <span style={{
-            fontSize: '0.8rem', fontWeight: 700,
-            color: 'rgba(255,255,255,0.5)',
-            letterSpacing: '0.05em',
-          }}>EcoAds</span>
-        </div>
+        {/* EcoAds logo oficial */}
+        <img
+          src="/ecoads-logo.png"
+          alt="EcoAds"
+          style={{ height: '28px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }}
+        />
 
         <span style={{
           fontSize: '0.65rem', fontWeight: 700,
@@ -199,22 +186,26 @@ export default function Login() {
 
         {/* Value prop pills */}
         <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '8px', justifyContent: 'center' }}>
-          {['Interface limpa', 'Sem anúncios', 'Para sempre'].map((tag, i) => (
-            <span key={tag} style={{
-              padding: '5px 13px',
-              borderRadius: '20px',
-              fontSize: '0.78rem',
-              fontWeight: 600,
-              background: i === 1
-                ? 'rgba(0,255,102,0.12)'
-                : 'rgba(255,255,255,0.05)',
-              border: i === 1
-                ? '1px solid rgba(0,255,102,0.3)'
-                : '1px solid rgba(255,255,255,0.08)',
-              color: i === 1 ? '#00ff66' : 'rgba(255,255,255,0.55)',
-              letterSpacing: '0.02em',
-            }}>{tag}</span>
-          ))}
+          <span style={{
+            padding: '5px 13px',
+            borderRadius: '20px',
+            fontSize: '0.78rem',
+            fontWeight: 600,
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            color: 'rgba(255,255,255,0.55)',
+            letterSpacing: '0.02em',
+          }}>Interface limpa</span>
+          <span style={{
+            padding: '5px 13px',
+            borderRadius: '20px',
+            fontSize: '0.78rem',
+            fontWeight: 700,
+            background: 'rgba(0,255,102,0.12)',
+            border: '1px solid rgba(0,255,102,0.3)',
+            color: '#00ff66',
+            letterSpacing: '0.02em',
+          }}>Sem anúncios, para sempre</span>
         </div>
       </section>
 
@@ -359,20 +350,17 @@ export default function Login() {
         justifyContent: 'center',
         gap: '10px',
       }}>
-        <div style={{
-          width: '20px', height: '20px',
-          borderRadius: '5px',
-          background: '#030303',
-          border: '1px solid rgba(0,255,102,0.35)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '0.75rem', fontWeight: 800, color: '#00ff66',
-        }}>E</div>
+        <img
+          src="/ecoads-logo.png"
+          alt="EcoAds"
+          style={{ height: '18px', objectFit: 'contain', filter: 'brightness(0) invert(1)', opacity: 0.25 }}
+        />
         <span style={{
           fontSize: '0.72rem',
           color: 'rgba(255,255,255,0.2)',
           letterSpacing: '0.02em',
         }}>
-          Um produto EcoAds · Tecnologia para o setor florestal
+          Tecnologia para o setor florestal
         </span>
       </footer>
 
