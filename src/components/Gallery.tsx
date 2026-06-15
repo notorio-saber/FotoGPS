@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import BottomNav from './BottomNav';
 import { CapturedPhoto } from '../types';
 import { getPhotos, deletePhoto } from '../utils/db';
@@ -132,9 +133,10 @@ function PhotoModal({ photo, onClose, onDelete }: PhotoModalProps) {
 }
 
 export default function Gallery() {
+  const [searchParams] = useSearchParams();
   const [photos, setPhotos] = useState<CapturedPhoto[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeFilter, setActiveFilter] = useState('all');
+  const [activeFilter, setActiveFilter] = useState(() => searchParams.get('projeto') || 'all');
   const [selectedPhoto, setSelectedPhoto] = useState<CapturedPhoto | null>(null);
   const [projectNames, setProjectNames] = useState<Record<string, string>>({});
 

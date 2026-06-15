@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import BottomNav from './BottomNav';
 import { Project } from '../types';
 import { getProjects, saveProject, deleteProject } from '../utils/projects';
 import { getPhotos } from '../utils/db';
 
 export default function Projects() {
+  const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const [photoCounts, setPhotoCounts] = useState<Record<string, number>>({});
   const [showModal, setShowModal] = useState(false);
@@ -111,7 +113,14 @@ export default function Projects() {
                 <div
                   key={project.id}
                   className="glass-card"
-                  style={{ padding: '16px', display: 'flex', alignItems: 'center', gap: '14px' }}
+                  onClick={() => count > 0 && navigate(`/galeria?projeto=${project.id}`)}
+                  style={{
+                    padding: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '14px',
+                    cursor: count > 0 ? 'pointer' : 'default',
+                  }}
                 >
                   {/* Icon */}
                   <div style={{
@@ -144,6 +153,9 @@ export default function Projects() {
                     </div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>
                       {formatDate(project.createdAt)}
+                      {count > 0 && (
+                        <span style={{ color: 'var(--cyan)', marginLeft: '8px' }}>Ver fotos →</span>
+                      )}
                     </div>
                   </div>
 
@@ -164,7 +176,7 @@ export default function Projects() {
 
                   {/* Delete */}
                   <button
-                    onClick={() => handleDelete(project.id)}
+                    onClick={(e) => { e.stopPropagation(); handleDelete(project.id); }}
                     style={{
                       width: '32px',
                       height: '32px',
