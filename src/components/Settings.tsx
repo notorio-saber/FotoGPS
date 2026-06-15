@@ -22,8 +22,9 @@ export default function Settings() {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const dataUrl = ev.target?.result as string;
-      update('logoDataUrl', dataUrl);
-      update('showLogo', true);
+      const next = { ...settings, logoDataUrl: dataUrl, showLogo: true };
+      setSettings(next);
+      saveSettings(next);
     };
     reader.readAsDataURL(file);
   };
