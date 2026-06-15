@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import BottomNav from './BottomNav';
 import { getProjects } from '../utils/projects';
@@ -7,7 +6,6 @@ import { getPhotos } from '../utils/db';
 
 export default function Dashboard() {
   const { profile } = useAuth();
-  const navigate = useNavigate();
   const [photoCount, setPhotoCount] = useState(0);
   const [projectCount, setProjectCount] = useState(0);
   const [avatarError, setAvatarError] = useState(false);
@@ -33,7 +31,7 @@ export default function Dashboard() {
   const licenseStatus = profile?.licenseStatus || 'trial';
 
   return (
-    <div className="page" style={{ background: 'var(--bg)', paddingBottom: 'calc(148px + env(safe-area-inset-bottom, 0px))' }}>
+    <div className="page" style={{ background: 'var(--bg)' }}>
 
       {/* Header */}
       <div style={{
@@ -118,32 +116,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Secondary actions */}
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button
-            className="btn-secondary"
-            onClick={() => navigate('/projetos')}
-            style={{ flex: 1 }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-            </svg>
-            Projetos
-          </button>
-          <button
-            className="btn-secondary"
-            onClick={() => navigate('/galeria')}
-            style={{ flex: 1 }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <circle cx="8.5" cy="8.5" r="1.5" />
-              <polyline points="21 15 16 10 5 21" />
-            </svg>
-            Galeria
-          </button>
-        </div>
-
         {/* Info card */}
         <div className="glass-card" style={{ padding: '16px' }}>
           <div className="section-title" style={{ marginBottom: '12px' }}>Armazenamento</div>
@@ -161,32 +133,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-      </div>
-
-      {/* NOVA FOTO — fixed just above bottom nav */}
-      <div style={{
-        position: 'fixed',
-        bottom: 'calc(64px + env(safe-area-inset-bottom, 0px) + 12px)',
-        left: '16px',
-        right: '16px',
-        zIndex: 90,
-      }}>
-        <button
-          className="btn-primary"
-          onClick={() => navigate('/nova-foto')}
-          style={{
-            height: '60px',
-            fontSize: '1.05rem',
-            letterSpacing: '0.05em',
-            boxShadow: '0 4px 24px rgba(0,255,102,0.35)',
-          }}
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-            <circle cx="12" cy="13" r="4" />
-          </svg>
-          NOVA FOTO
-        </button>
       </div>
 
       <BottomNav />

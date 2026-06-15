@@ -32,7 +32,8 @@ export function renderPhotoWithOverlay(
   video: HTMLVideoElement,
   geo: GeoState,
   projectName: string,
-  settings: OverlaySettings
+  settings: OverlaySettings,
+  preloadedLogo?: HTMLImageElement | null
 ): string {
   const canvas = document.createElement('canvas');
   const width = video.videoWidth || 1280;
@@ -110,11 +111,11 @@ export function renderPhotoWithOverlay(
 
   const panelHeight = lines.length * lineHeight + paddingV * 2;
 
-  // Logo setup
-  let logoImg: HTMLImageElement | null = null;
-  const logoHeight = Math.min(fontSize * 3, 60 * (width / 400));
+  // Logo setup — use preloaded image if available (avoids empty naturalWidth)
+  let logoImg: HTMLImageElement | null = preloadedLogo || null;
+  const logoHeight = Math.min(fontSize * 4.5, width * 0.12);
 
-  if (settings.showLogo && settings.logoDataUrl) {
+  if (!logoImg && settings.showLogo && settings.logoDataUrl) {
     logoImg = new Image();
     logoImg.src = settings.logoDataUrl;
   }
@@ -183,13 +184,14 @@ export async function renderPhotoWithOverlayAsync(
   projectName: string,
   settings: OverlaySettings
 ): Promise<string> {
+  let preloadedLogo: HTMLImageElement | null = null;
   if (settings.showLogo && settings.logoDataUrl) {
-    await new Promise<void>((resolve) => {
+    preloadedLogo = await new Promise<HTMLImageElement>((resolve) => {
       const img = new Image();
-      img.onload = () => resolve();
-      img.onerror = () => resolve();
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(img);
       img.src = settings.logoDataUrl;
     });
   }
-  return renderPhotoWithOverlay(video, geo, projectName, settings);
+  return renderPhotoWithOverlay(video, geo, projectName, settings, preloadedLogo);
 }
