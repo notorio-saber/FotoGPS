@@ -146,15 +146,13 @@ export default function Login() {
           border: '1.5px solid rgba(0,255,102,0.25)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           boxShadow: '0 0 48px rgba(0,255,102,0.15), inset 0 1px 0 rgba(0,255,102,0.1)',
+          overflow: 'hidden',
         }}>
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-            <circle cx="24" cy="20" r="9" stroke="#00ff66" strokeWidth="2" />
-            <circle cx="24" cy="20" r="3.5" fill="#00ff66" />
-            <path d="M24 30 L24 40" stroke="#00e5ff" strokeWidth="2" strokeLinecap="round" />
-            <path d="M19 36 L24 40 L29 36" stroke="#00e5ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            <circle cx="24" cy="20" r="14" stroke="rgba(0,255,102,0.15)" strokeWidth="1" />
-            <circle cx="24" cy="20" r="19" stroke="rgba(0,255,102,0.07)" strokeWidth="1" />
-          </svg>
+          <img
+            src="/app-logo.png"
+            alt="GeoFoto"
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
         </div>
 
         {/* Product name */}
