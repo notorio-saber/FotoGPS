@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase';
 import { GeoState, OverlaySettings, Project } from '../types';
 import { startGeoWatch } from '../utils/geo';
-import { renderPhotoWithOverlayAsync } from '../utils/canvas';
+import { renderPhotoWithOverlayAsync, renderOverlayOnImage } from '../utils/canvas';
 import { savePhoto, getPhotos, getAppKV } from '../utils/db';
 import { getSettings, saveSettings } from '../utils/settings';
 import { getProjects } from '../utils/projects';
@@ -197,8 +197,8 @@ function SettingsDrawer({ settings, onUpdate, onClose }: {
 
 // ─── Post-Capture Modal ───────────────────────────────────────────────────────
 interface PostCaptureData {
-  dataUrl: string;
-  observation: string;
+  dataUrl: string;       // frame with geo overlay but WITHOUT name/obs
+  observation: string;  // pre-filled from live note input
   projectId: string;
   projectName: string;
   capturedAt: number;
@@ -207,6 +207,7 @@ interface PostCaptureData {
   altitude: number | null;
   city: string;
   state: string;
+  settings: OverlaySettings; // needed for re-render
 }
 
 function PostCaptureModal({
@@ -509,14 +510,17 @@ export default function NewPhoto() {
       }
       const settingsWithLogo = { ...settings, logoDataUrl };
 
+      // Capture with geo overlay but WITHOUT observation/name.
+      // Those will be baked in after the modal confirmation.
       const dataUrl = await renderPhotoWithOverlayAsync(
-        videoRef.current, geo, projectName, settingsWithLogo, observation
+        videoRef.current, geo, projectName, settingsWithLogo
+        // no observation arg — modal handles it
       );
 
       // Show post-capture modal instead of saving directly
       setPendingPhoto({
         dataUrl,
-        observation: observation.trim(),
+        observation: observation.trim(), // pre-fill from live note
         projectId: selectedProjectId,
         projectName,
         capturedAt: Date.now(),
@@ -525,6 +529,7 @@ export default function NewPhoto() {
         altitude: geo.altitude,
         city: geo.city,
         state: geo.state,
+        settings: settingsWithLogo,
       });
     } catch (err) {
       console.error('Capture error:', err);
@@ -534,16 +539,24 @@ export default function NewPhoto() {
     }
   };
 
-  // Step 2: user confirms → save
+  // Step 2: user confirms → re-render with name+obs then save
   const handleSavePhoto = async (obs: string, photoName: string, projectId: string, projectName: string) => {
     if (!pendingPhoto) return;
 
     try {
+      // Bake the name + observation into the photo image
+      const finalDataUrl = await renderOverlayOnImage(
+        pendingPhoto.dataUrl,
+        pendingPhoto.settings,
+        photoName || undefined,
+        obs.trim() || undefined
+      );
+
       const id = await savePhoto({
         projectId,
         projectName,
         photoName: photoName || undefined,
-        dataUrl: pendingPhoto.dataUrl,
+        dataUrl: finalDataUrl,
         capturedAt: pendingPhoto.capturedAt,
         lat: pendingPhoto.lat,
         lon: pendingPhoto.lon,
@@ -556,7 +569,7 @@ export default function NewPhoto() {
       // Update last project used
       if (projectId) localStorage.setItem('geofoto-last-project', projectId);
 
-      setLastPhotoUrl(pendingPhoto.dataUrl);
+      setLastPhotoUrl(finalDataUrl);
       setPendingPhoto(null);
       setObservation('');
 

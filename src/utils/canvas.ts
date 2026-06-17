@@ -201,3 +201,112 @@ export async function renderPhotoWithOverlayAsync(
   }
   return renderPhotoWithOverlay(video, geo, projectName, settings, observation, preloadedLogo);
 }
+
+/**
+ * Re-renders an extra overlay panel (name + observation) on top of an
+ * already-captured image dataUrl. Called after the post-capture modal so the
+ * final saved photo contains the data the user entered in the modal.
+ * The panel is placed on the side OPPOSITE to the main geo overlay.
+ */
+export async function renderOverlayOnImage(
+  sourceDataUrl: string,
+  settings: OverlaySettings,
+  photoName?: string,
+  observation?: string
+): Promise<string> {
+  // Nothing to add — return original
+  const hasName = photoName && photoName.trim();
+  const hasObs  = observation && observation.trim();
+  if (!hasName && !hasObs) return sourceDataUrl;
+
+  // Load source image
+  const sourceImg = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const img = new Image();
+    img.onload  = () => resolve(img);
+    img.onerror = reject;
+    img.src = sourceDataUrl;
+  });
+
+  // Load logo if needed
+  let logo: HTMLImageElement | null = null;
+  if (settings.showLogo && settings.logoDataUrl) {
+    logo = await new Promise<HTMLImageElement>((resolve) => {
+      const img = new Image();
+      img.onload  = () => resolve(img);
+      img.onerror = () => resolve(img);
+      img.src = settings.logoDataUrl;
+    });
+  }
+
+  const width  = sourceImg.naturalWidth  || 1280;
+  const height = sourceImg.naturalHeight || 720;
+  const canvas = document.createElement('canvas');
+  canvas.width  = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d')!;
+
+  // Draw the already-captured image (already has geo overlay)
+  ctx.drawImage(sourceImg, 0, 0, width, height);
+
+  // Extra lines
+  const lines: Array<{ text: string; isTitle?: boolean }> = [];
+  if (hasName) lines.push({ text: `\u{1F4F7} ${photoName!.trim()}`, isTitle: true });
+  if (hasObs)  lines.push({ text: `Obs: ${observation!.trim()}` });
+
+  // Sizing
+  const baseFontSize = Math.max(14, width * 0.022);
+  const fontSize     = getFontSize(settings.fontSize, baseFontSize);
+  const lineH        = fontSize * 1.55;
+  const padH         = width * 0.025;
+  const padV         = fontSize * 0.75;
+  const border       = Math.max(3, width * 0.005);
+  const panelH       = lines.length * lineH + padV * 2;
+
+  // Put this panel on the OPPOSITE side of the main geo overlay
+  const side   = settings.position === 'bottom' ? 'top' : 'bottom';
+  const panelY = side === 'top' ? 0 : height - panelH;
+
+  // Background + accent border
+  ctx.fillStyle = 'rgba(3,3,3,0.82)';
+  ctx.fillRect(0, panelY, width, panelH);
+  ctx.fillStyle = '#00ff66';
+  ctx.fillRect(0, panelY, border, panelH);
+
+  // Logo space
+  const logoH = Math.min(fontSize * 4.5, width * 0.12);
+  const logoReserve = logo ? logoH * 2 + padH : 0;
+  const maxTW = width - padH - border * 2 - logoReserve - padH;
+
+  // Text
+  ctx.textBaseline = 'top';
+  let ty = panelY + padV;
+  const tx = padH + border * 2;
+
+  lines.forEach((line) => {
+    if (line.isTitle) {
+      ctx.fillStyle = '#00ff66';
+      ctx.font = `bold ${fontSize}px 'Courier New', Courier, monospace`;
+    } else {
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `${fontSize}px 'Courier New', Courier, monospace`;
+    }
+    let t = line.text;
+    while (ctx.measureText(t).width > maxTW && t.length > 4) {
+      t = t.slice(0, -4) + '...';
+    }
+    ctx.fillText(t, tx, ty);
+    ty += lineH;
+  });
+
+  // Logo
+  if (logo && settings.logoDataUrl) {
+    try {
+      const ar = logo.naturalWidth / logo.naturalHeight || 1;
+      const dw = logoH * ar;
+      ctx.drawImage(logo, width - dw - padH, panelY + (panelH - logoH) / 2, dw, logoH);
+    } catch (_) { /* skip */ }
+  }
+
+  return canvas.toDataURL('image/jpeg', 0.94);
+}
+
