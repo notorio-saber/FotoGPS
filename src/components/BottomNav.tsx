@@ -71,17 +71,6 @@ export default function BottomNav() {
     navigate(path);
   };
 
-  // Keep bottom padding synced with safe area
-  const [safeBottom, setSafeBottom] = useState(0);
-  useEffect(() => {
-    const el = document.createElement('div');
-    el.style.cssText = 'position:fixed;bottom:0;height:env(safe-area-inset-bottom,0px);pointer-events:none;visibility:hidden;';
-    document.body.appendChild(el);
-    const obs = new ResizeObserver(() => setSafeBottom(el.offsetHeight));
-    obs.observe(el);
-    return () => { obs.disconnect(); document.body.removeChild(el); };
-  }, []);
-
   const isCameraActive = location.pathname === '/nova-foto';
 
   return (
@@ -90,7 +79,7 @@ export default function BottomNav() {
       <div
         style={{
           position: 'fixed',
-          bottom: `${safeBottom + 6}px`,
+          bottom: 'calc(8px + env(safe-area-inset-bottom, 0px) * 0.35)',
           left: '50%',
           transform: 'translateX(-50%)',
           zIndex: 100,
@@ -198,9 +187,7 @@ export default function BottomNav() {
       </div>
 
       {/* Safe area fill at the very bottom edge */}
-      {safeBottom > 0 && (
-        <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: `${safeBottom}px`, background: 'transparent', zIndex: 99 }} />
-      )}
+      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 'env(safe-area-inset-bottom, 0px)', background: 'transparent', zIndex: 99 }} />
     </>
   );
 }
