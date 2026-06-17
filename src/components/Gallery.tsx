@@ -89,8 +89,40 @@ function PhotoModal({ photo, onClose, onDelete }: PhotoModalProps) {
     downloadKML(kml, `ponto_${date}_${photo.id}.kml`);
   };
 
-  const handleWhatsApp = () => {
-    const text = buildWhatsAppText(photo);
+  const handleWhatsApp = async () => {
+    const date = new Date(photo.capturedAt).toLocaleString('pt-BR');
+    const project = photo.projectName || 'Sem projeto';
+    const name = photo.photoName ? `*${photo.photoName}*\n` : '';
+    const coordLine =
+      photo.lat !== null
+        ? `📍 *Coordenadas:* ${photo.lat.toFixed(6)}, ${photo.lon?.toFixed(6)}\n🗺️ https://maps.google.com/?q=${photo.lat},${photo.lon}`
+        : '📍 Sem coordenadas GPS';
+    const city = photo.city ? `\n🏙️ ${[photo.city, photo.state].filter(Boolean).join(' — ')}` : '';
+    const obs = photo.observation ? `\n📝 ${photo.observation}` : '';
+    const rawText = `${name}📁 Projeto: ${project}\n🕐 ${date}${city}\n${coordLine}${obs}\n\n_Enviado via FotoGPS Ecoads_`;
+
+    if (navigator.share && navigator.canShare) {
+      try {
+        const response = await fetch(photo.dataUrl);
+        const blob = await response.blob();
+        const cleanName = (photo.photoName || 'foto').replace(/[^a-zA-Z0-9]/g, '_');
+        const file = new File([blob], `${cleanName}.jpg`, { type: 'image/jpeg' });
+
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: photo.photoName || 'Compartilhar Foto',
+            text: rawText,
+          });
+          return;
+        }
+      } catch (err) {
+        console.error('Erro ao compartilhar via Web Share API:', err);
+      }
+    }
+
+    // Fallback: standard WhatsApp URL
+    const text = encodeURIComponent(rawText);
     window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
   };
 
