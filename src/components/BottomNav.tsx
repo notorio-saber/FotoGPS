@@ -90,7 +90,7 @@ export default function BottomNav() {
       <div
         style={{
           position: 'fixed',
-          bottom: `${safeBottom + 16}px`,
+          bottom: `${safeBottom + 6}px`,
           left: '50%',
           transform: 'translateX(-50%)',
           zIndex: 100,
