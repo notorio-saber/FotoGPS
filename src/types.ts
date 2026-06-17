@@ -45,6 +45,7 @@ export interface CapturedPhoto {
   id: number;
   projectId: string;
   projectName: string;
+  photoName?: string;
   dataUrl: string;
   capturedAt: number;
   lat: number | null;
@@ -54,3 +55,4 @@ export interface CapturedPhoto {
   state: string;
   observation?: string;
 }
+

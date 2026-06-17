@@ -217,10 +217,11 @@ function PostCaptureModal({
 }: {
   data: PostCaptureData;
   projects: Project[];
-  onSave: (obs: string, projectId: string, projectName: string) => void;
+  onSave: (obs: string, photoName: string, projectId: string, projectName: string) => void;
   onDiscard: () => void;
 }) {
   const [obs, setObs] = useState(data.observation);
+  const [photoName, setPhotoName] = useState('');
   const [selProjectId, setSelProjectId] = useState(data.projectId);
   const [selProjectName, setSelProjectName] = useState(data.projectName);
   const [saving, setSaving] = useState(false);
@@ -237,7 +238,7 @@ function PostCaptureModal({
 
   const handleSave = async () => {
     setSaving(true);
-    await onSave(obs, selProjectId, selProjectName);
+    await onSave(obs, photoName.trim(), selProjectId, selProjectName);
     setSaving(false);
   };
 
@@ -294,6 +295,21 @@ function PostCaptureModal({
           )}
         </div>
 
+        {/* Photo name */}
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '6px' }}>
+            Nome da foto
+          </label>
+          <input
+            type="text"
+            value={photoName}
+            onChange={(e) => setPhotoName(e.target.value)}
+            placeholder="Ex: Fachada Norte, Ponto 42, Vista aérea..."
+            autoFocus
+            style={{ width: '100%' }}
+          />
+        </div>
+
         {/* Project selector */}
         <div style={{ marginBottom: '12px' }}>
           <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '6px' }}>
@@ -322,7 +338,6 @@ function PostCaptureModal({
             placeholder="Adicione uma descrição para esta foto..."
             rows={3}
             style={{ resize: 'none', fontFamily: 'inherit', fontSize: '0.9rem', lineHeight: 1.5 }}
-            autoFocus
           />
         </div>
 
@@ -520,13 +535,14 @@ export default function NewPhoto() {
   };
 
   // Step 2: user confirms → save
-  const handleSavePhoto = async (obs: string, projectId: string, projectName: string) => {
+  const handleSavePhoto = async (obs: string, photoName: string, projectId: string, projectName: string) => {
     if (!pendingPhoto) return;
 
     try {
       const id = await savePhoto({
         projectId,
         projectName,
+        photoName: photoName || undefined,
         dataUrl: pendingPhoto.dataUrl,
         capturedAt: pendingPhoto.capturedAt,
         lat: pendingPhoto.lat,

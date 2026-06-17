@@ -1,14 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
-const NAV_H = 64;
-const FAB_R = 29;      // 58px diameter
-const NOTCH_W = 33;    // half-width of notch opening at nav top
-const NOTCH_DEPTH = 12; // how deep the arc dips into the nav
-// Arc radius derived from notch geometry: R = (w² + d²) / (2d)
-const ARC_R = Math.round((NOTCH_W ** 2 + NOTCH_DEPTH ** 2) / (2 * NOTCH_DEPTH));
+interface NavItem {
+  path: string;
+  label: string;
+  icon: React.ReactNode;
+}
 
-const navLeft = [
+const navItems: NavItem[] = [
   {
     path: '/dashboard',
     label: 'Início',
@@ -28,9 +27,7 @@ const navLeft = [
       </svg>
     ),
   },
-];
-
-const navRight = [
+  // center slot — FAB placeholder (rendered separately)
   {
     path: '/galeria',
     label: 'Galeria',
@@ -56,161 +53,249 @@ const navRight = [
 ];
 
 export default function BottomNav() {
-  const [navW, setNavW] = useState(window.innerWidth);
   const navigate = useNavigate();
   const location = useLocation();
+  const fabRef = useRef<HTMLButtonElement>(null);
+  const [fabPressed, setFabPressed] = useState(false);
+  const [ripple, setRipple] = useState<{ x: number; y: number; id: number } | null>(null);
+  const rippleCounter = useRef(0);
 
+  // Ripple effect for nav items
+  const triggerRipple = (e: React.MouseEvent, path: string) => {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    rippleCounter.current += 1;
+    setRipple({ x, y, id: rippleCounter.current });
+    setTimeout(() => setRipple(null), 500);
+    navigate(path);
+  };
+
+  // Keep bottom padding synced with safe area
+  const [safeBottom, setSafeBottom] = useState(0);
   useEffect(() => {
-    const onResize = () => setNavW(window.innerWidth);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;bottom:0;height:env(safe-area-inset-bottom,0px);pointer-events:none;visibility:hidden;';
+    document.body.appendChild(el);
+    const obs = new ResizeObserver(() => setSafeBottom(el.offsetHeight));
+    obs.observe(el);
+    return () => { obs.disconnect(); document.body.removeChild(el); };
   }, []);
 
-  const cx = navW / 2;
-
-  // Nav background: rectangle with a gentle concave arc at the top center
-  const navPath = [
-    `M0,${NAV_H}`,
-    `L0,0`,
-    `L${cx - NOTCH_W},0`,
-    `A${ARC_R},${ARC_R} 0 0,1 ${cx + NOTCH_W},0`,
-    `L${navW},0`,
-    `L${navW},${NAV_H}`,
-    'Z',
-  ].join(' ');
-
-  const handleNav = (path: string) => navigate(path);
+  const isCameraActive = location.pathname === '/nova-foto';
 
   return (
     <>
-      {/* FAB — camera, fully inside the nav, centered */}
-      <button
-        onClick={() => navigate('/nova-foto')}
+      {/* ── Liquid Glass pill container ── */}
+      <div
         style={{
           position: 'fixed',
-          // center at visual nav mid-height: (NAV_H/2) from nav top = (NAV_H/2 - FAB_R) from nav bottom
-          bottom: `calc(${NAV_H / 2 - FAB_R}px + env(safe-area-inset-bottom, 0px))`,
+          bottom: `${safeBottom + 16}px`,
           left: '50%',
           transform: 'translateX(-50%)',
-          width: `${FAB_R * 2}px`,
-          height: `${FAB_R * 2}px`,
-          borderRadius: '50%',
-          background: 'var(--green)',
-          border: 'none',
+          zIndex: 100,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
+          padding: '6px 8px',
+          borderRadius: '100px',
+          // Liquid glass background
+          background: 'rgba(12, 18, 13, 0.55)',
+          backdropFilter: 'blur(28px) saturate(160%)',
+          WebkitBackdropFilter: 'blur(28px) saturate(160%)',
+          border: '1px solid rgba(255, 255, 255, 0.10)',
+          boxShadow: [
+            // Outer glow — green tint
+            '0 0 0 1px rgba(0,255,102,0.06)',
+            // Top highlight — glass shine
+            'inset 0 1px 0 rgba(255,255,255,0.12)',
+            // Bottom inner shadow
+            'inset 0 -1px 0 rgba(0,0,0,0.3)',
+            // Drop shadow
+            '0 8px 32px rgba(0,0,0,0.55)',
+            '0 2px 8px rgba(0,0,0,0.4)',
+          ].join(', '),
+        }}
+      >
+        {/* Left items: Início, Projetos */}
+        {navItems.slice(0, 2).map((item) => {
+          const isActive = location.pathname === item.path;
+          return (
+            <NavBtn
+              key={item.path}
+              item={item}
+              isActive={isActive}
+              onClick={(e) => triggerRipple(e, item.path)}
+            />
+          );
+        })}
+
+        {/* FAB — camera button in the center */}
+        <button
+          ref={fabRef}
+          onClick={() => navigate('/nova-foto')}
+          onPointerDown={() => setFabPressed(true)}
+          onPointerUp={() => setFabPressed(false)}
+          onPointerLeave={() => setFabPressed(false)}
+          style={{
+            width: '54px',
+            height: '54px',
+            borderRadius: '50%',
+            background: isCameraActive
+              ? 'rgba(0,255,102,0.15)'
+              : 'linear-gradient(145deg, #00ff66 0%, #00cc52 100%)',
+            border: isCameraActive
+              ? '1.5px solid rgba(0,255,102,0.5)'
+              : 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            color: isCameraActive ? 'var(--green)' : '#030303',
+            cursor: 'pointer',
+            margin: '0 4px',
+            transition: 'all 0.18s cubic-bezier(0.34,1.56,0.64,1)',
+            transform: fabPressed ? 'scale(0.88)' : isCameraActive ? 'scale(0.95)' : 'scale(1)',
+            boxShadow: isCameraActive
+              ? '0 0 16px rgba(0,255,102,0.3)'
+              : [
+                  '0 0 0 4px rgba(0,255,102,0.12)',
+                  '0 0 20px rgba(0,255,102,0.45)',
+                  'inset 0 1px 0 rgba(255,255,255,0.35)',
+                  '0 4px 12px rgba(0,0,0,0.5)',
+                ].join(', '),
+          }}
+          aria-label="Câmera"
+        >
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{ transition: 'transform 0.18s ease', transform: fabPressed ? 'scale(0.85)' : 'scale(1)' }}
+          >
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+            <circle cx="12" cy="13" r="4" />
+          </svg>
+        </button>
+
+        {/* Right items: Galeria, Mapa */}
+        {navItems.slice(2).map((item) => {
+          const isActive = location.pathname === item.path;
+          return (
+            <NavBtn
+              key={item.path}
+              item={item}
+              isActive={isActive}
+              onClick={(e) => triggerRipple(e, item.path)}
+            />
+          );
+        })}
+      </div>
+
+      {/* Safe area fill at the very bottom edge */}
+      {safeBottom > 0 && (
+        <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: `${safeBottom}px`, background: 'transparent', zIndex: 99 }} />
+      )}
+    </>
+  );
+}
+
+// ── Individual nav button ───────────────────────────────────────────────────
+function NavBtn({
+  item,
+  isActive,
+  onClick,
+}: {
+  item: NavItem;
+  isActive: boolean;
+  onClick: (e: React.MouseEvent) => void;
+}) {
+  const [pressed, setPressed] = useState(false);
+
+  return (
+    <button
+      onClick={onClick}
+      onPointerDown={() => setPressed(true)}
+      onPointerUp={() => setPressed(false)}
+      onPointerLeave={() => setPressed(false)}
+      style={{
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '3px',
+        padding: '8px 12px',
+        borderRadius: '50px',
+        border: 'none',
+        background: isActive
+          ? 'rgba(0,255,102,0.12)'
+          : pressed
+          ? 'rgba(255,255,255,0.06)'
+          : 'transparent',
+        color: isActive ? 'var(--green)' : 'rgba(255,255,255,0.45)',
+        cursor: 'pointer',
+        transition: 'all 0.15s cubic-bezier(0.4,0,0.2,1)',
+        transform: pressed ? 'scale(0.91)' : 'scale(1)',
+        boxShadow: isActive
+          ? 'inset 0 0 0 1px rgba(0,255,102,0.2), 0 0 12px rgba(0,255,102,0.08)'
+          : 'none',
+        minWidth: '56px',
+        overflow: 'hidden',
+      }}
+      aria-label={item.label}
+    >
+      {/* Active top indicator dot */}
+      {isActive && (
+        <span
+          style={{
+            position: 'absolute',
+            top: '4px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '18px',
+            height: '2px',
+            borderRadius: '1px',
+            background: 'var(--green)',
+            boxShadow: '0 0 6px rgba(0,255,102,0.6)',
+          }}
+        />
+      )}
+
+      {/* Icon */}
+      <span
+        style={{
+          width: '22px',
+          height: '22px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          boxShadow: '0 0 0 4px rgba(0,255,102,0.18), 0 2px 16px rgba(0,255,102,0.5)',
-          zIndex: 102,
-          color: '#030303',
-          cursor: 'pointer',
-          transition: 'transform 0.12s ease, box-shadow 0.12s ease',
+          transition: 'transform 0.15s ease',
+          transform: pressed ? 'scale(0.85) translateY(1px)' : 'scale(1)',
+          marginTop: '4px',
         }}
-        onPointerDown={(e) => (e.currentTarget.style.transform = 'translateX(-50%) scale(0.93)')}
-        onPointerUp={(e) => (e.currentTarget.style.transform = 'translateX(-50%) scale(1)')}
-        onPointerLeave={(e) => (e.currentTarget.style.transform = 'translateX(-50%) scale(1)')}
       >
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-          <circle cx="12" cy="13" r="4" />
-        </svg>
-      </button>
+        {item.icon}
+      </span>
 
-      {/* Nav container */}
-      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100 }}>
-
-        {/* SVG — nav shape with notch + borders */}
-        <svg
-          width={navW}
-          height={NAV_H}
-          viewBox={`0 0 ${navW} ${NAV_H}`}
-          style={{ display: 'block' }}
-        >
-          {/* Background fill */}
-          <path d={navPath} fill="rgba(10,14,11,0.97)" />
-
-          {/* Border: flat left segment */}
-          <line
-            x1="0" y1="0.5"
-            x2={cx - NOTCH_W} y2="0.5"
-            stroke="rgba(255,255,255,0.07)" strokeWidth="1"
-          />
-          {/* Border: flat right segment */}
-          <line
-            x1={cx + NOTCH_W} y1="0.5"
-            x2={navW} y2="0.5"
-            stroke="rgba(255,255,255,0.07)" strokeWidth="1"
-          />
-          {/* Border: the notch arc — green glow highlight */}
-          <path
-            d={`M${cx - NOTCH_W},0.5 A${ARC_R},${ARC_R} 0 0,1 ${cx + NOTCH_W},0.5`}
-            fill="none"
-            stroke="rgba(0,255,102,0.28)"
-            strokeWidth="1.5"
-          />
-          {/* Inner glow at notch — subtler, wider */}
-          <path
-            d={`M${cx - NOTCH_W + 4},2 A${ARC_R},${ARC_R} 0 0,1 ${cx + NOTCH_W - 4},2`}
-            fill="none"
-            stroke="rgba(0,255,102,0.10)"
-            strokeWidth="3"
-          />
-        </svg>
-
-        {/* Nav items overlay */}
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: `${NAV_H}px`,
-          display: 'flex',
-          alignItems: 'center',
-        }}>
-          {/* Left half */}
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'space-around', alignItems: 'center' }}>
-            {navLeft.map((item) => {
-              const isActive = location.pathname === item.path;
-              return (
-                <button
-                  key={item.path}
-                  className={`bottom-nav-item${isActive ? ' active' : ''}`}
-                  onClick={() => handleNav(item.path)}
-                >
-                  {item.icon}
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Center spacer (FAB area) */}
-          <div style={{ width: `${NOTCH_W * 2 + 12}px`, flexShrink: 0 }} />
-
-          {/* Right half */}
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'space-around', alignItems: 'center' }}>
-            {navRight.map((item) => {
-              const isActive = location.pathname === item.path;
-              return (
-                <button
-                  key={item.path}
-                  className={`bottom-nav-item${isActive ? ' active' : ''}`}
-                  onClick={() => handleNav(item.path)}
-                >
-                  {item.icon}
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Safe area fill */}
-        <div style={{
-          height: 'env(safe-area-inset-bottom, 0px)',
-          background: 'rgba(10,14,11,0.97)',
-        }} />
-      </div>
-    </>
+      {/* Label */}
+      <span
+        style={{
+          fontSize: '0.6rem',
+          fontWeight: isActive ? 700 : 500,
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+          lineHeight: 1,
+          transition: 'color 0.15s ease',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {item.label}
+      </span>
+    </button>
   );
 }

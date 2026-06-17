@@ -123,7 +123,7 @@ export async function deletePhoto(id: number): Promise<void> {
 
 export async function updatePhoto(
   id: number,
-  patch: Partial<Pick<import('../types').CapturedPhoto, 'observation' | 'projectId' | 'projectName'>>
+  patch: Partial<Pick<import('../types').CapturedPhoto, 'observation' | 'projectId' | 'projectName' | 'photoName'>>
 ): Promise<void> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
