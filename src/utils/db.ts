@@ -120,3 +120,24 @@ export async function deletePhoto(id: number): Promise<void> {
     request.onerror = () => reject(request.error);
   });
 }
+
+export async function updatePhoto(
+  id: number,
+  patch: Partial<Pick<import('../types').CapturedPhoto, 'observation' | 'projectId' | 'projectName'>>
+): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    const getReq = store.get(id);
+    getReq.onsuccess = () => {
+      const record = getReq.result;
+      if (!record) { reject(new Error('Photo not found')); return; }
+      const updated = { ...record, ...patch };
+      const putReq = store.put(updated);
+      putReq.onsuccess = () => resolve();
+      putReq.onerror = () => reject(putReq.error);
+    };
+    getReq.onerror = () => reject(getReq.error);
+  });
+}

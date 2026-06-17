@@ -9,6 +9,7 @@ import Gallery from './components/Gallery';
 import Settings from './components/Settings';
 import BlockedScreen from './components/BlockedScreen';
 import InstallPrompt from './components/InstallPrompt';
+import MapView from './components/MapView';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, profile, loading } = useAuth();
@@ -110,6 +111,10 @@ function AppRoutes() {
         <Route
           path="/configuracoes"
           element={<ProtectedRoute><Settings /></ProtectedRoute>}
+        />
+        <Route
+          path="/mapa"
+          element={<ProtectedRoute><MapView /></ProtectedRoute>}
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

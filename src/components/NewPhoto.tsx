@@ -3,13 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { doc, updateDoc, increment } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase';
-import { GeoState, OverlaySettings } from '../types';
+import { GeoState, OverlaySettings, Project } from '../types';
 import { startGeoWatch } from '../utils/geo';
 import { renderPhotoWithOverlayAsync } from '../utils/canvas';
 import { savePhoto, getPhotos, getAppKV } from '../utils/db';
 import { getSettings, saveSettings } from '../utils/settings';
 import { getProjects } from '../utils/projects';
 
+// ─── GPS Indicator ───────────────────────────────────────────────────────────
 function GpsIndicator({ geo }: { geo: GeoState }) {
   if (geo.loading) {
     return (
@@ -33,17 +34,15 @@ function GpsIndicator({ geo }: { geo: GeoState }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
       <div style={{
-        width: '8px',
-        height: '8px',
-        borderRadius: '50%',
-        background: color,
-        boxShadow: `0 0 6px ${color}`,
+        width: '8px', height: '8px', borderRadius: '50%',
+        background: color, boxShadow: `0 0 6px ${color}`,
       }} />
       <span style={{ fontSize: '0.7rem', color, fontFamily: 'monospace' }}>{label}</span>
     </div>
   );
 }
 
+// ─── Live Overlay ─────────────────────────────────────────────────────────────
 function LiveOverlay({ geo, projectName, settings, observation }: {
   geo: GeoState;
   projectName: string;
@@ -87,7 +86,6 @@ function LiveOverlay({ geo, projectName, settings, observation }: {
     const loc = [geo.city, geo.state].filter(Boolean).join(' — ');
     if (loc) lines.push({ text: loc });
   }
-
   if (observation && observation.trim()) {
     lines.push({ text: `Obs: ${observation.trim()}` });
   }
@@ -100,24 +98,20 @@ function LiveOverlay({ geo, projectName, settings, observation }: {
     <div style={{
       position: 'absolute',
       [settings.position === 'top' ? 'top' : 'bottom']: 0,
-      left: 0,
-      right: 0,
+      left: 0, right: 0,
       background: 'rgba(3,3,3,0.80)',
       borderLeft: '3px solid var(--green)',
       padding: '10px 12px',
       pointerEvents: 'none',
     }}>
       {lines.map((line, i) => (
-        <div
-          key={i}
-          style={{
-            fontFamily: 'Courier New, monospace',
-            fontSize: `${fontSize}px`,
-            lineHeight: 1.6,
-            color: line.isTitle ? 'var(--green)' : 'white',
-            fontWeight: line.isTitle ? 700 : 400,
-          }}
-        >
+        <div key={i} style={{
+          fontFamily: 'Courier New, monospace',
+          fontSize: `${fontSize}px`,
+          lineHeight: 1.6,
+          color: line.isTitle ? 'var(--green)' : 'white',
+          fontWeight: line.isTitle ? 700 : 400,
+        }}>
           {line.text}
         </div>
       ))}
@@ -125,11 +119,8 @@ function LiveOverlay({ geo, projectName, settings, observation }: {
   );
 }
 
-function SettingsDrawer({
-  settings,
-  onUpdate,
-  onClose,
-}: {
+// ─── Settings Drawer ──────────────────────────────────────────────────────────
+function SettingsDrawer({ settings, onUpdate, onClose }: {
   settings: OverlaySettings;
   onUpdate: (s: OverlaySettings) => void;
   onClose: () => void;
@@ -152,23 +143,17 @@ function SettingsDrawer({
 
   return (
     <div style={{
-      position: 'absolute',
-      top: '56px',
-      right: 0,
+      position: 'absolute', top: '56px', right: 0,
       width: '260px',
       background: 'rgba(10,10,10,0.97)',
       border: '1px solid var(--border)',
       borderRadius: 'var(--radius)',
-      zIndex: 50,
-      overflow: 'hidden',
+      zIndex: 50, overflow: 'hidden',
       boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
     }}>
       <div style={{
-        padding: '12px 16px',
-        borderBottom: '1px solid var(--border)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
+        padding: '12px 16px', borderBottom: '1px solid var(--border)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
         <span style={{ fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
           Overlay
@@ -184,36 +169,23 @@ function SettingsDrawer({
         <div key={t.key} className="toggle-row">
           <span className="toggle-label">{t.label}</span>
           <label className="toggle-switch">
-            <input
-              type="checkbox"
-              checked={settings[t.key] as boolean}
-              onChange={(e) => update(t.key, e.target.checked)}
-            />
+            <input type="checkbox" checked={settings[t.key] as boolean} onChange={(e) => update(t.key, e.target.checked)} />
             <span className="toggle-slider" />
           </label>
         </div>
       ))}
 
-      {/* Position */}
       <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)' }}>
         <div className="label-upper" style={{ marginBottom: '8px' }}>Posição</div>
         <div style={{ display: 'flex', gap: '6px' }}>
           {(['bottom', 'top'] as const).map((pos) => (
-            <button
-              key={pos}
-              onClick={() => update('position', pos)}
-              style={{
-                flex: 1,
-                padding: '6px',
-                borderRadius: 'var(--radius-xs)',
-                border: '1px solid',
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                background: settings.position === pos ? 'rgba(0,255,102,0.12)' : 'transparent',
-                borderColor: settings.position === pos ? 'rgba(0,255,102,0.4)' : 'var(--border)',
-                color: settings.position === pos ? 'var(--green)' : 'var(--text-muted)',
-              }}
-            >
+            <button key={pos} onClick={() => update('position', pos)} style={{
+              flex: 1, padding: '6px', borderRadius: 'var(--radius-xs)',
+              border: '1px solid', fontSize: '0.75rem', fontWeight: 600,
+              background: settings.position === pos ? 'rgba(0,255,102,0.12)' : 'transparent',
+              borderColor: settings.position === pos ? 'rgba(0,255,102,0.4)' : 'var(--border)',
+              color: settings.position === pos ? 'var(--green)' : 'var(--text-muted)',
+            }}>
               {pos === 'bottom' ? 'Inferior' : 'Superior'}
             </button>
           ))}
@@ -223,6 +195,180 @@ function SettingsDrawer({
   );
 }
 
+// ─── Post-Capture Modal ───────────────────────────────────────────────────────
+interface PostCaptureData {
+  dataUrl: string;
+  observation: string;
+  projectId: string;
+  projectName: string;
+  capturedAt: number;
+  lat: number | null;
+  lon: number | null;
+  altitude: number | null;
+  city: string;
+  state: string;
+}
+
+function PostCaptureModal({
+  data,
+  projects,
+  onSave,
+  onDiscard,
+}: {
+  data: PostCaptureData;
+  projects: Project[];
+  onSave: (obs: string, projectId: string, projectName: string) => void;
+  onDiscard: () => void;
+}) {
+  const [obs, setObs] = useState(data.observation);
+  const [selProjectId, setSelProjectId] = useState(data.projectId);
+  const [selProjectName, setSelProjectName] = useState(data.projectName);
+  const [saving, setSaving] = useState(false);
+
+  const handleProjectChange = (id: string) => {
+    setSelProjectId(id);
+    if (id === '') {
+      setSelProjectName('Sem projeto');
+    } else {
+      const p = projects.find((p) => p.id === id);
+      setSelProjectName(p?.name || 'Sem projeto');
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    await onSave(obs, selProjectId, selProjectName);
+    setSaving(false);
+  };
+
+  return (
+    <div className="post-capture-overlay" onClick={(e) => { if (e.target === e.currentTarget) onDiscard(); }}>
+      <div className="post-capture-sheet">
+        {/* Handle */}
+        <div style={{ display: 'flex', justifyContent: 'center', paddingBottom: '12px' }}>
+          <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(255,255,255,0.15)' }} />
+        </div>
+
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <div>
+            <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text)' }}>Foto capturada</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+              Edite os dados antes de salvar
+            </div>
+          </div>
+          <button
+            onClick={onDiscard}
+            style={{
+              width: '32px', height: '32px', borderRadius: '50%',
+              background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Preview */}
+        <div style={{
+          borderRadius: 'var(--radius-sm)', overflow: 'hidden',
+          border: '1px solid var(--border)', marginBottom: '16px',
+          position: 'relative', aspectRatio: '16/9',
+        }}>
+          <img src={data.dataUrl} alt="Foto capturada" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          {/* GPS badge */}
+          {data.lat !== null && (
+            <div style={{
+              position: 'absolute', top: '8px', right: '8px',
+              background: 'rgba(0,0,0,0.7)', borderRadius: '20px',
+              padding: '3px 8px', display: 'flex', alignItems: 'center', gap: '5px',
+              border: '1px solid rgba(0,255,102,0.3)',
+            }}>
+              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 6px var(--green)' }} />
+              <span style={{ fontSize: '0.65rem', color: 'var(--green)', fontFamily: 'monospace' }}>
+                {data.lat.toFixed(5)}, {data.lon?.toFixed(5)}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Project selector */}
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '6px' }}>
+            Projeto
+          </label>
+          <select
+            value={selProjectId}
+            onChange={(e) => handleProjectChange(e.target.value)}
+            style={{ width: '100%' }}
+          >
+            <option value="">— Sem projeto —</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Observation */}
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '6px' }}>
+            Descrição / Observação
+          </label>
+          <textarea
+            value={obs}
+            onChange={(e) => setObs(e.target.value)}
+            placeholder="Adicione uma descrição para esta foto..."
+            rows={3}
+            style={{ resize: 'none', fontFamily: 'inherit', fontSize: '0.9rem', lineHeight: 1.5 }}
+            autoFocus
+          />
+        </div>
+
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button
+            onClick={onDiscard}
+            style={{
+              flex: 1, padding: '13px', borderRadius: 'var(--radius)',
+              background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)',
+              color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 600,
+            }}
+          >
+            Descartar
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            style={{
+              flex: 2, padding: '13px', borderRadius: 'var(--radius)',
+              background: saving ? 'rgba(0,255,102,0.5)' : 'var(--green)',
+              border: 'none', color: '#030303', fontSize: '0.9rem', fontWeight: 700,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              boxShadow: '0 0 20px rgba(0,255,102,0.25)',
+            }}
+          >
+            {saving ? (
+              <div className="spinner" style={{ width: '18px', height: '18px', borderTopColor: '#030303', borderColor: 'rgba(0,0,0,0.2)' }} />
+            ) : (
+              <>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                  <polyline points="17 21 17 13 7 13 7 21" />
+                  <polyline points="7 3 7 8 15 8" />
+                </svg>
+                Salvar foto
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function NewPhoto() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -234,7 +380,7 @@ export default function NewPhoto() {
     city: '', state: '', loading: true,
   });
   const [settings, setSettings] = useState<OverlaySettings>(getSettings());
-  const [projects, setProjects] = useState(getProjects());
+  const [projects, setProjects] = useState<Project[]>(getProjects());
   const [selectedProjectId, setSelectedProjectId] = useState<string>(() => {
     return localStorage.getItem('geofoto-last-project') || '';
   });
@@ -249,6 +395,9 @@ export default function NewPhoto() {
   const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
   const [observation, setObservation] = useState('');
   const [showNoteInput, setShowNoteInput] = useState(false);
+
+  // Post-capture modal state
+  const [pendingPhoto, setPendingPhoto] = useState<PostCaptureData | null>(null);
 
   // Time ticker for live overlay
   const [, setTick] = useState(0);
@@ -268,9 +417,6 @@ export default function NewPhoto() {
   useEffect(() => {
     const projs = getProjects();
     setProjects(projs);
-    if (!selectedProjectId && projs.length > 0) {
-      setSelectedProjectId(projs[0].id);
-    }
   }, []);
 
   // Check multiple cameras
@@ -292,11 +438,7 @@ export default function NewPhoto() {
         streamRef.current.getTracks().forEach((t) => t.stop());
       }
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: facing,
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-        },
+        video: { facingMode: facing, width: { ideal: 1920 }, height: { ideal: 1080 } },
         audio: false,
       });
       streamRef.current = stream;
@@ -319,9 +461,7 @@ export default function NewPhoto() {
 
   useEffect(() => {
     startCamera(facingMode);
-    return () => {
-      streamRef.current?.getTracks().forEach((t) => t.stop());
-    };
+    return () => { streamRef.current?.getTracks().forEach((t) => t.stop()); };
   }, [facingMode, startCamera]);
 
   // GPS watch
@@ -330,15 +470,14 @@ export default function NewPhoto() {
     return stop;
   }, []);
 
-  const flipCamera = () => {
-    setFacingMode((prev) => prev === 'environment' ? 'user' : 'environment');
-  };
+  const flipCamera = () => setFacingMode((prev) => prev === 'environment' ? 'user' : 'environment');
 
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(''), 3000);
   };
 
+  // Step 1: capture frame → open modal
   const handleCapture = async () => {
     if (!videoRef.current || capturing) return;
 
@@ -349,7 +488,6 @@ export default function NewPhoto() {
     setTimeout(() => setFlash(false), 200);
 
     try {
-      // Load logo from IndexedDB so it's always available even after navigation
       let logoDataUrl = settings.logoDataUrl || '';
       if (settings.showLogo && !logoDataUrl) {
         logoDataUrl = (await getAppKV('logo')) || '';
@@ -357,109 +495,101 @@ export default function NewPhoto() {
       const settingsWithLogo = { ...settings, logoDataUrl };
 
       const dataUrl = await renderPhotoWithOverlayAsync(
-        videoRef.current,
-        geo,
-        projectName,
-        settingsWithLogo,
-        observation
+        videoRef.current, geo, projectName, settingsWithLogo, observation
       );
 
-      const id = await savePhoto({
+      // Show post-capture modal instead of saving directly
+      setPendingPhoto({
+        dataUrl,
+        observation: observation.trim(),
         projectId: selectedProjectId,
         projectName,
-        dataUrl,
         capturedAt: Date.now(),
         lat: geo.lat,
         lon: geo.lon,
         altitude: geo.altitude,
         city: geo.city,
         state: geo.state,
-        observation: observation.trim() || undefined,
       });
-
-      setLastPhotoUrl(dataUrl);
-
-      // Update Firestore photo count
-      if (user) {
-        try {
-          await updateDoc(doc(db, 'users', user.uid), {
-            photoCount: increment(1),
-          });
-        } catch (_) {
-          // Non-critical
-        }
-      }
-
-      showToast(`Foto salva! #${id}`);
     } catch (err) {
       console.error('Capture error:', err);
-      showToast('Erro ao salvar foto');
+      showToast('Erro ao capturar foto');
     } finally {
       setCapturing(false);
     }
   };
 
+  // Step 2: user confirms → save
+  const handleSavePhoto = async (obs: string, projectId: string, projectName: string) => {
+    if (!pendingPhoto) return;
+
+    try {
+      const id = await savePhoto({
+        projectId,
+        projectName,
+        dataUrl: pendingPhoto.dataUrl,
+        capturedAt: pendingPhoto.capturedAt,
+        lat: pendingPhoto.lat,
+        lon: pendingPhoto.lon,
+        altitude: pendingPhoto.altitude,
+        city: pendingPhoto.city,
+        state: pendingPhoto.state,
+        observation: obs.trim() || undefined,
+      });
+
+      // Update last project used
+      if (projectId) localStorage.setItem('geofoto-last-project', projectId);
+
+      setLastPhotoUrl(pendingPhoto.dataUrl);
+      setPendingPhoto(null);
+      setObservation('');
+
+      // Update Firestore photo count
+      if (user) {
+        try {
+          await updateDoc(doc(db, 'users', user.uid), { photoCount: increment(1) });
+        } catch (_) { /* non-critical */ }
+      }
+
+      showToast(`Foto salva! #${id}`);
+    } catch (err) {
+      console.error('Save error:', err);
+      showToast('Erro ao salvar foto');
+    }
+  };
+
+  const handleDiscard = () => {
+    setPendingPhoto(null);
+  };
+
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
 
   return (
-    <div style={{
-      position: 'fixed',
-      inset: 0,
-      background: '#000',
-      overflow: 'hidden',
-      display: 'flex',
-      flexDirection: 'column',
-    }}>
+    <div style={{ position: 'fixed', inset: 0, background: '#000', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       {/* Flash effect */}
       {flash && (
         <div style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'white',
-          zIndex: 200,
-          opacity: 0.8,
-          pointerEvents: 'none',
-          transition: 'opacity 0.2s',
+          position: 'absolute', inset: 0, background: 'white',
+          zIndex: 200, opacity: 0.8, pointerEvents: 'none', transition: 'opacity 0.2s',
         }} />
       )}
 
       {/* Camera view */}
       {cameraError ? (
         <div style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '16px',
-          padding: '24px',
-          textAlign: 'center',
+          flex: 1, display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          gap: '16px', padding: '24px', textAlign: 'center',
         }}>
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
             <line x1="1" y1="1" x2="23" y2="23" stroke="var(--red)" />
           </svg>
-          <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', maxWidth: '280px' }}>
-            {cameraError}
-          </p>
-          <button className="btn-secondary" onClick={() => startCamera(facingMode)}>
-            Tentar novamente
-          </button>
+          <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', maxWidth: '280px' }}>{cameraError}</p>
+          <button className="btn-secondary" onClick={() => startCamera(facingMode)}>Tentar novamente</button>
         </div>
       ) : (
-        <video
-          ref={videoRef}
-          playsInline
-          muted
-          autoPlay
-          style={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-          }}
-        />
+        <video ref={videoRef} playsInline muted autoPlay style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
       )}
 
       {/* Live overlay preview */}
@@ -470,117 +600,74 @@ export default function NewPhoto() {
       )}
 
       {/* TOP BAR */}
-      <div style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        paddingTop: 'env(safe-area-inset-top, 0px)',
-        background: 'linear-gradient(rgba(0,0,0,0.6), transparent)',
-        zIndex: 20,
-      }}>
-      <div style={{
-        height: '56px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 12px',
-        gap: '8px',
-      }}>
-        {/* Back */}
-        <button
-          onClick={() => navigate('/dashboard')}
-          style={{
-            width: '38px',
-            height: '38px',
-            borderRadius: '50%',
-            background: 'rgba(0,0,0,0.4)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-          }}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="19" y1="12" x2="5" y2="12" />
-            <polyline points="12 19 5 12 12 5" />
-          </svg>
-        </button>
-
-        {/* Project selector */}
-        <button
-          onClick={() => { setShowProjectPicker(!showProjectPicker); setShowSettings(false); }}
-          style={{
-            flex: 1,
-            height: '38px',
-            background: 'rgba(0,0,0,0.5)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: '20px',
-            color: 'white',
-            fontSize: '0.8rem',
-            fontWeight: 600,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '6px',
-            padding: '0 12px',
-            maxWidth: '200px',
-          }}
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-          </svg>
-          <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {selectedProject?.name || 'Sem projeto'}
-          </span>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round">
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
-        </button>
-
-        {/* GPS + Note + Settings */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-          <GpsIndicator geo={geo} />
-          <button
-            onClick={() => { setShowNoteInput(!showNoteInput); setShowSettings(false); setShowProjectPicker(false); }}
-            title="Adicionar observação"
-            style={{
-              width: '38px',
-              height: '38px',
-              borderRadius: '50%',
-              background: observation ? 'rgba(0,255,102,0.2)' : showNoteInput ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.4)',
-              border: `1px solid ${observation ? 'rgba(0,255,102,0.4)' : 'rgba(255,255,255,0.1)'}`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={observation ? 'var(--green)' : 'white'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 20h9" />
-              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, paddingTop: 'env(safe-area-inset-top, 0px)', background: 'linear-gradient(rgba(0,0,0,0.6), transparent)', zIndex: 20 }}>
+        <div style={{ height: '56px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 12px', gap: '8px' }}>
+          {/* Back */}
+          <button onClick={() => navigate('/dashboard')} style={{
+            width: '38px', height: '38px', borderRadius: '50%',
+            background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
             </svg>
           </button>
+
+          {/* Project selector */}
           <button
-            onClick={() => { setShowSettings(!showSettings); setShowProjectPicker(false); setShowNoteInput(false); }}
+            onClick={() => { setShowProjectPicker(!showProjectPicker); setShowSettings(false); }}
             style={{
-              width: '38px',
-              height: '38px',
-              borderRadius: '50%',
-              background: showSettings ? 'rgba(0,255,102,0.2)' : 'rgba(0,0,0,0.4)',
-              border: `1px solid ${showSettings ? 'rgba(0,255,102,0.4)' : 'rgba(255,255,255,0.1)'}`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              flex: 1, height: '38px', background: 'rgba(0,0,0,0.5)',
+              border: '1px solid rgba(255,255,255,0.12)', borderRadius: '20px',
+              color: 'white', fontSize: '0.8rem', fontWeight: 600,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              gap: '6px', padding: '0 12px', maxWidth: '200px',
             }}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={showSettings ? 'var(--green)' : 'white'} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+            </svg>
+            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {selectedProject?.name || 'Sem projeto'}
+            </span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round">
+              <polyline points="6 9 12 15 18 9" />
             </svg>
           </button>
+
+          {/* GPS + Note + Settings */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+            <GpsIndicator geo={geo} />
+            <button
+              onClick={() => { setShowNoteInput(!showNoteInput); setShowSettings(false); setShowProjectPicker(false); }}
+              title="Adicionar observação"
+              style={{
+                width: '38px', height: '38px', borderRadius: '50%',
+                background: observation ? 'rgba(0,255,102,0.2)' : showNoteInput ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.4)',
+                border: `1px solid ${observation ? 'rgba(0,255,102,0.4)' : 'rgba(255,255,255,0.1)'}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={observation ? 'var(--green)' : 'white'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+              </svg>
+            </button>
+            <button
+              onClick={() => { setShowSettings(!showSettings); setShowProjectPicker(false); setShowNoteInput(false); }}
+              style={{
+                width: '38px', height: '38px', borderRadius: '50%',
+                background: showSettings ? 'rgba(0,255,102,0.2)' : 'rgba(0,0,0,0.4)',
+                border: `1px solid ${showSettings ? 'rgba(0,255,102,0.4)' : 'rgba(255,255,255,0.1)'}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={showSettings ? 'var(--green)' : 'white'} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              </svg>
+            </button>
+          </div>
         </div>
-      </div>
       </div>
 
       {/* Project picker dropdown */}
@@ -588,18 +675,39 @@ export default function NewPhoto() {
         <div style={{
           position: 'absolute',
           top: 'calc(env(safe-area-inset-top, 0px) + 62px)',
-          left: '50%',
-          transform: 'translateX(-50%)',
+          left: '50%', transform: 'translateX(-50%)',
           width: '280px',
           background: 'rgba(10,10,10,0.97)',
           border: '1px solid var(--border)',
           borderRadius: 'var(--radius)',
-          zIndex: 50,
-          overflow: 'hidden',
+          zIndex: 50, overflow: 'hidden',
           boxShadow: '0 8px 32px rgba(0,0,0,0.7)',
         }}>
+          {/* Sem projeto option */}
+          <button
+            onClick={() => {
+              setSelectedProjectId('');
+              localStorage.removeItem('geofoto-last-project');
+              setShowProjectPicker(false);
+            }}
+            style={{
+              width: '100%', padding: '14px 16px',
+              background: selectedProjectId === '' ? 'rgba(0,255,102,0.08)' : 'transparent',
+              border: 'none', borderBottom: '1px solid var(--border)',
+              color: selectedProjectId === '' ? 'var(--green)' : 'var(--text-muted)',
+              fontSize: '0.9rem', fontWeight: selectedProjectId === '' ? 700 : 400,
+              textAlign: 'left', display: 'flex', alignItems: 'center', gap: '10px',
+            }}
+          >
+            {selectedProjectId === '' && (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2.5" strokeLinecap="round">
+                <path d="M20 6L9 17l-5-5" />
+              </svg>
+            )}
+            — Sem projeto —
+          </button>
           {projects.length === 0 ? (
-            <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+            <div style={{ padding: '16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
               Nenhum projeto criado
             </div>
           ) : (
@@ -612,18 +720,12 @@ export default function NewPhoto() {
                   setShowProjectPicker(false);
                 }}
                 style={{
-                  width: '100%',
-                  padding: '14px 16px',
+                  width: '100%', padding: '14px 16px',
                   background: selectedProjectId === p.id ? 'rgba(0,255,102,0.08)' : 'transparent',
-                  border: 'none',
-                  borderBottom: '1px solid var(--border)',
+                  border: 'none', borderBottom: '1px solid var(--border)',
                   color: selectedProjectId === p.id ? 'var(--green)' : 'var(--text)',
-                  fontSize: '0.9rem',
-                  fontWeight: selectedProjectId === p.id ? 700 : 400,
-                  textAlign: 'left',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
+                  fontSize: '0.9rem', fontWeight: selectedProjectId === p.id ? 700 : 400,
+                  textAlign: 'left', display: 'flex', alignItems: 'center', gap: '10px',
                 }}
               >
                 {selectedProjectId === p.id && (
@@ -641,11 +743,7 @@ export default function NewPhoto() {
       {/* Settings drawer */}
       {showSettings && (
         <div style={{ position: 'absolute', top: 'env(safe-area-inset-top, 0px)', right: 0, zIndex: 50, padding: '0 8px' }}>
-          <SettingsDrawer
-            settings={settings}
-            onUpdate={setSettings}
-            onClose={() => setShowSettings(false)}
-          />
+          <SettingsDrawer settings={settings} onUpdate={setSettings} onClose={() => setShowSettings(false)} />
         </div>
       )}
 
@@ -654,151 +752,91 @@ export default function NewPhoto() {
         <div style={{
           position: 'absolute',
           bottom: 'calc(120px + env(safe-area-inset-bottom, 0px))',
-          left: 0,
-          right: 0,
-          zIndex: 30,
+          left: 0, right: 0, zIndex: 30,
           background: 'rgba(10,10,10,0.93)',
           borderTop: '1px solid rgba(0,255,102,0.2)',
           padding: '10px 14px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
+          display: 'flex', alignItems: 'center', gap: '10px',
         }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-            <path d="M12 20h9" />
-            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+            <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
           </svg>
           <input
-            type="text"
-            value={observation}
+            type="text" value={observation}
             onChange={(e) => setObservation(e.target.value)}
             placeholder="Observação (aparecerá na foto)..."
             autoFocus
-            style={{
-              flex: 1,
-              background: 'transparent',
-              border: 'none',
-              outline: 'none',
-              color: 'white',
-              fontSize: '0.85rem',
-              fontFamily: 'Courier New, monospace',
-            }}
+            style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'white', fontSize: '0.85rem', fontFamily: 'Courier New, monospace' }}
           />
           {observation && (
-            <button
-              onClick={() => setObservation('')}
-              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', padding: '4px', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
-              title="Limpar observação"
-            >
+            <button onClick={() => setObservation('')} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', padding: '4px', display: 'flex', alignItems: 'center', cursor: 'pointer' }} title="Limpar observação">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
           )}
-          <button
-            onClick={() => setShowNoteInput(false)}
-            style={{ background: 'none', border: 'none', color: 'var(--green)', padding: '4px 2px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
-          >
+          <button onClick={() => setShowNoteInput(false)} style={{ background: 'none', border: 'none', color: 'var(--green)', padding: '4px 2px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}>
             OK
           </button>
         </div>
       )}
 
       {/* BOTTOM BAR */}
-      <div style={{
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-        background: 'linear-gradient(transparent, rgba(0,0,0,0.7))',
-        zIndex: 20,
-      }}>
-      <div style={{
-        height: '120px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 32px 16px',
-      }}>
-        {/* Last photo thumbnail */}
-        <button
-          onClick={() => navigate('/galeria')}
-          style={{
-            width: '56px',
-            height: '56px',
-            borderRadius: '10px',
-            overflow: 'hidden',
-            border: '2px solid rgba(255,255,255,0.2)',
-            background: 'rgba(0,0,0,0.4)',
-            flexShrink: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          {lastPhotoUrl ? (
-            <img src={lastPhotoUrl} alt="Última foto" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          ) : (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <circle cx="8.5" cy="8.5" r="1.5" />
-              <polyline points="21 15 16 10 5 21" />
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, paddingBottom: 'env(safe-area-inset-bottom, 0px)', background: 'linear-gradient(transparent, rgba(0,0,0,0.7))', zIndex: 20 }}>
+        <div style={{ height: '120px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 32px 16px' }}>
+          {/* Last photo thumbnail */}
+          <button onClick={() => navigate('/galeria')} style={{
+            width: '56px', height: '56px', borderRadius: '10px', overflow: 'hidden',
+            border: '2px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.4)',
+            flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            {lastPhotoUrl ? (
+              <img src={lastPhotoUrl} alt="Última foto" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" />
+              </svg>
+            )}
+          </button>
+
+          {/* Capture button */}
+          <button
+            onClick={handleCapture}
+            disabled={capturing || !!cameraError}
+            style={{
+              width: '72px', height: '72px', borderRadius: '50%',
+              background: capturing ? 'rgba(255,255,255,0.7)' : 'white',
+              border: '4px solid var(--green)',
+              boxShadow: `0 0 0 4px rgba(0,255,102,0.2), 0 0 24px rgba(0,255,102,0.4)`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0, transition: 'all 0.15s ease',
+              transform: capturing ? 'scale(0.92)' : 'scale(1)',
+              opacity: cameraError ? 0.4 : 1,
+            }}
+          >
+            {capturing ? (
+              <div className="spinner" style={{ width: '28px', height: '28px', borderColor: 'rgba(0,0,0,0.2)', borderTopColor: 'var(--green)' }} />
+            ) : (
+              <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(0,0,0,0.07)' }} />
+            )}
+          </button>
+
+          {/* Camera flip */}
+          <button
+            onClick={flipCamera} disabled={!hasMultipleCameras}
+            style={{
+              width: '56px', height: '56px', borderRadius: '50%',
+              background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.15)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0, opacity: hasMultipleCameras ? 1 : 0.3,
+            }}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M1 4v6h6" /><path d="M23 20v-6h-6" />
+              <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
             </svg>
-          )}
-        </button>
-
-        {/* Capture button */}
-        <button
-          onClick={handleCapture}
-          disabled={capturing || !!cameraError}
-          style={{
-            width: '72px',
-            height: '72px',
-            borderRadius: '50%',
-            background: capturing ? 'rgba(255,255,255,0.7)' : 'white',
-            border: '4px solid var(--green)',
-            boxShadow: `0 0 0 4px rgba(0,255,102,0.2), 0 0 24px rgba(0,255,102,0.4)`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-            transition: 'all 0.15s ease',
-            transform: capturing ? 'scale(0.92)' : 'scale(1)',
-            opacity: cameraError ? 0.4 : 1,
-          }}
-        >
-          {capturing ? (
-            <div className="spinner" style={{ width: '28px', height: '28px', borderColor: 'rgba(0,0,0,0.2)', borderTopColor: 'var(--green)' }} />
-          ) : (
-            <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(0,0,0,0.07)' }} />
-          )}
-        </button>
-
-        {/* Camera flip */}
-        <button
-          onClick={flipCamera}
-          disabled={!hasMultipleCameras}
-          style={{
-            width: '56px',
-            height: '56px',
-            borderRadius: '50%',
-            background: 'rgba(0,0,0,0.4)',
-            border: '1px solid rgba(255,255,255,0.15)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-            opacity: hasMultipleCameras ? 1 : 0.3,
-          }}
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M1 4v6h6" />
-            <path d="M23 20v-6h-6" />
-            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
-          </svg>
-        </button>
-      </div>
+          </button>
+        </div>
       </div>
 
       {/* Toast */}
@@ -813,9 +851,18 @@ export default function NewPhoto() {
 
       {/* Click away to close dropdowns */}
       {(showProjectPicker || showSettings) && (
-        <div
-          style={{ position: 'absolute', inset: 0, zIndex: 40 }}
+        <div style={{ position: 'absolute', inset: 0, zIndex: 40 }}
           onClick={() => { setShowProjectPicker(false); setShowSettings(false); setShowNoteInput(false); }}
+        />
+      )}
+
+      {/* Post-Capture Modal */}
+      {pendingPhoto && (
+        <PostCaptureModal
+          data={pendingPhoto}
+          projects={projects}
+          onSave={handleSavePhoto}
+          onDiscard={handleDiscard}
         />
       )}
     </div>
